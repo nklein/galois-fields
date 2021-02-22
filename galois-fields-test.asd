@@ -12,4 +12,5 @@
   :components ((:static-file "UNLICENSE.txt")
                (:module "test"
                 :components ((:file "package")
+                             (:file "def" :depends-on ("package"))
                              (:file "run" :depends-on ("package"))))))
