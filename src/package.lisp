@@ -2,4 +2,5 @@
 
 (defpackage #:galois-fields
   (:use #:cl)
-  (:export #:deffield))
+  (:export #:deffield
+           #:deffield*))

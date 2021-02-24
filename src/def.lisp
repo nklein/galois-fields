@@ -97,19 +97,17 @@
                           (aref tbl b a) v))))
     tbl))
 
-(defun define-times-table (p d)
-  (let ((m (find-irreducible-polynomial p d)))
-    (unless (or (= d 1) m)
-      (error "Unable to find irreducible polynomial~%"))
-    (let* ((q (expt p d))
-           (tbl (make-array (list q q) :element-type `(integer 0 ,(1- q)) :initial-element 0))
-           (m (and m (poly-to-list m p (1+ d)))))
-      (loop :for a :below q
-         :do (loop :for b :upto a
-                :do (let ((v (galois* a b p d m)))
-                      (setf (aref tbl a b) v
-                            (aref tbl b a) v))))
-      tbl)))
+(defun define-times-table (p d m)
+  (unless (or (= d 1) m)
+    (error "Unable to find irreducible polynomial~%"))
+  (let* ((q (expt p d))
+         (tbl (make-array (list q q) :element-type `(integer 0 ,(1- q)) :initial-element 0)))
+    (loop :for a :below q
+       :do (loop :for b :upto a
+              :do (let ((v (galois* a b p d m)))
+                    (setf (aref tbl a b) v
+                          (aref tbl b a) v))))
+    tbl))
 
 (defun primep (p)
   (declare (type (integer 2) p))
@@ -119,40 +117,71 @@
      :do (return-from primep nil))
   t)
 
-(defmacro deffield (name &key p (d 1))
+(defmacro deffield* (&key p (d 1) (use-tables nil use-tables-p))
+  (declare (type (integer 2) p)
+           (type (integer 1) d)
+           (type boolean use-tables))
+  (let* ((plus-fn (gensym "+-"))
+         (times-fn (gensym "*-"))
+         (pv (gensym "P-"))
+         (dv (gensym "D-"))
+         (ut (gensym "USE-TABLES-"))
+         (m (gensym "M-"))
+         (q (gensym "Q-"))
+         (tbl+ (gensym "TBL+"))
+         (tbl* (gensym "TBL*"))
+         (fn+ (gensym "FN+"))
+         (fn* (gensym "FN*")))
+
+    `(let* ((,pv ,p)
+            (,dv ,d)
+            (,q (expt ,pv ,dv))
+            (,ut ,(if use-tables-p
+                     use-tables
+                     `(<= 512 ,q)))
+            (,m (progn
+                  (assert (primep ,pv))
+                  (and (< 1 ,dv)
+                       (poly-to-list (find-irreducible-polynomial ,pv ,dv) ,pv (1+ ,dv)))))
+            (,tbl+ (and ,ut (define-plus-table ,pv ,dv)))
+            (,tbl* (and ,ut (define-times-table ,pv ,dv ,m)))
+            (,fn+ (if ,tbl+
+                      (lambda (a b) (aref ,tbl+ a b))
+                      (lambda (a b) (galois+ a b ,pv ,dv))))
+            (,fn* (if ,tbl*
+                      (lambda (a b) (aref ,tbl* a b))
+                      (lambda (a b) (galois* a b ,pv ,dv ,m)))))
+       (flet ((,plus-fn (&rest vs)
+                (assert (every (lambda (v) (typep v `(integer 0 ,(1- ,q)))) vs))
+                (cond
+                  ((null vs) 0)
+                  (t (reduce ,fn+
+                             (rest vs)
+                             :initial-value (first vs)))))
+              (,times-fn (&rest vs)
+                (assert (every (lambda (v) (typep v `(integer 0 ,(1- ,q)))) vs))
+                (cond
+                  ((null vs) 1)
+                  (t (reduce ,fn*
+                             (rest vs)
+                             :initial-value (first vs))))))
+         (list #',plus-fn #',times-fn)))))
+
+
+(defmacro deffield (name &rest args &key p (d 1) use-tables)
   (declare (type symbol name)
            (type (integer 2) p)
-           (type (integer 1) d))
+           (type (integer 1) d)
+           (type boolean use-tables))
+  (declare (ignore p d use-tables))
   (let* ((base (string name))
          (plus-fn (intern (concatenate 'string base "+")
                           (symbol-package name)))
          (times-fn (intern (concatenate 'string base "*")
                            (symbol-package name)))
-         (pv (gensym "P-"))
-         (dv (gensym "D-"))
-         (q (gensym "Q-"))
-         (tbl+ (gensym "+"))
-         (tbl* (gensym "*")))
-    `(let* ((,pv ,p)
-            (,dv ,d)
-            (,q (expt ,pv ,dv))
-            (,tbl+ (define-plus-table ,pv ,dv))
-            (,tbl* (define-times-table ,pv ,dv)))
-       (assert (primep ,pv))
-       (defun ,plus-fn (&rest vs)
-         (assert (every (lambda (v) (typep v `(integer 0 ,(1- ,q)))) vs))
-         (cond
-           ((null vs) 0)
-           (t (reduce (lambda (a b)
-                        (aref ,tbl+ a b))
-                      (rest vs)
-                      :initial-value (first vs)))))
-       (defun ,times-fn (&rest vs)
-         (assert (every (lambda (v) (typep v `(integer 0 ,(1- ,q)))) vs))
-         (cond
-           ((null vs) 1)
-           (t (reduce (lambda (a b)
-                        (aref ,tbl* a b))
-                      (rest vs)
-                      :initial-value (first vs)))))
+         (pp (gensym "fn+"))
+         (tt (gensym "fn*")))
+    `(destructuring-bind (,pp ,tt) (deffield* ,@args)
+       (setf (symbol-function ',plus-fn) ,pp
+             (symbol-function ',times-fn) ,tt)
        (list ',plus-fn ',times-fn))))

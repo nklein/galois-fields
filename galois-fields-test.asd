@@ -8,7 +8,7 @@
   :licence "UNLICENSE"
   :encoding :utf-8
   :depends-on ((:version #:galois-fields "0.1.20210221")
-               "nst")
+               #:nst)
   :components ((:static-file "UNLICENSE.txt")
                (:module "test"
                 :components ((:file "package")
