@@ -117,55 +117,41 @@
      :do (return-from primep nil))
   t)
 
-(defmacro deffield* (&key p (d 1) (use-tables nil use-tables-p))
+(defun deffield* (&key p (d 1) (use-tables nil use-tables-p))
   (declare (type (integer 2) p)
            (type (integer 1) d)
            (type boolean use-tables))
-  (let* ((plus-fn (gensym "+-"))
-         (times-fn (gensym "*-"))
-         (pv (gensym "P-"))
-         (dv (gensym "D-"))
-         (ut (gensym "USE-TABLES-"))
-         (m (gensym "M-"))
-         (q (gensym "Q-"))
-         (tbl+ (gensym "TBL+"))
-         (tbl* (gensym "TBL*"))
-         (fn+ (gensym "FN+"))
-         (fn* (gensym "FN*")))
-
-    `(let* ((,pv ,p)
-            (,dv ,d)
-            (,q (expt ,pv ,dv))
-            (,ut ,(if use-tables-p
-                     use-tables
-                     `(<= 512 ,q)))
-            (,m (progn
-                  (assert (primep ,pv))
-                  (and (< 1 ,dv)
-                       (poly-to-list (find-irreducible-polynomial ,pv ,dv) ,pv (1+ ,dv)))))
-            (,tbl+ (and ,ut (define-plus-table ,pv ,dv)))
-            (,tbl* (and ,ut (define-times-table ,pv ,dv ,m)))
-            (,fn+ (if ,tbl+
-                      (lambda (a b) (aref ,tbl+ a b))
-                      (lambda (a b) (galois+ a b ,pv ,dv))))
-            (,fn* (if ,tbl*
-                      (lambda (a b) (aref ,tbl* a b))
-                      (lambda (a b) (galois* a b ,pv ,dv ,m)))))
-       (flet ((,plus-fn (&rest vs)
-                (assert (every (lambda (v) (typep v `(integer 0 ,(1- ,q)))) vs))
-                (cond
-                  ((null vs) 0)
-                  (t (reduce ,fn+
-                             (rest vs)
-                             :initial-value (first vs)))))
-              (,times-fn (&rest vs)
-                (assert (every (lambda (v) (typep v `(integer 0 ,(1- ,q)))) vs))
-                (cond
-                  ((null vs) 1)
-                  (t (reduce ,fn*
-                             (rest vs)
-                             :initial-value (first vs))))))
-         (list #',plus-fn #',times-fn)))))
+  (let* ((q (expt p d))
+         (ut (if use-tables-p
+                 use-tables
+                 (<= 512 q)))
+          (m (progn
+                (assert (primep p))
+                (and (< 1 d)
+                     (poly-to-list (find-irreducible-polynomial p d) p (1+ d)))))
+          (tbl+ (and ut (define-plus-table p d)))
+          (tbl* (and ut (define-times-table p d m)))
+          (fn+ (if tbl+
+                   (lambda (a b) (aref tbl+ a b))
+                   (lambda (a b) (galois+ a b p d))))
+          (fn* (if tbl*
+                   (lambda (a b) (aref tbl* a b))
+                   (lambda (a b) (galois* a b p d m)))))
+     (flet ((plus-fn (&rest vs)
+              (assert (every (lambda (v) (typep v `(integer 0 ,(1- q)))) vs))
+              (cond
+                ((null vs) 0)
+                (t (reduce fn+
+                           (rest vs)
+                           :initial-value (first vs)))))
+            (times-fn (&rest vs)
+              (assert (every (lambda (v) (typep v `(integer 0 ,(1- q)))) vs))
+              (cond
+                ((null vs) 1)
+                (t (reduce fn*
+                           (rest vs)
+                           :initial-value (first vs))))))
+       (list #'plus-fn #'times-fn))))
 
 
 (defmacro deffield (name &rest args &key p (d 1) use-tables)
