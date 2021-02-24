@@ -42,6 +42,6 @@ The library also provides a `deffield` macro for defining global functions for t
 This defines functions based upon the given base-name `name`.
 
     (deffield gf32 :p 2 :d 5)
-    (list (gf32+ 12 3)
-          (gf32* 12 3))
-       => (15 20)
+    (list (gf32+ 12 7)
+          (gf32* 12 7))
+       => (11 1)

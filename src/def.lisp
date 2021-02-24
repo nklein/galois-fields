@@ -52,15 +52,17 @@
           :summing (* aa (expt x i)))
        p))
 
-(defun poly-has-solution (a p)
-  (loop :for x :from 1 :below p
-     :when (zerop (poly a x p))
-     :do (return-from poly-has-solution t)))
+(defun irreduciblep (a p d)
+  (loop :for b :from p :below (expt p (1+ (ceiling d 2)))
+     :when (zerop (list-to-poly (polymod a p (poly-to-list b p d))
+                                p))
+     :do (return-from irreduciblep nil))
+  t)
 
 (defun find-irreducible-polynomial (p d)
   (loop :with base := (expt p d)
      :for a :from (1+ base) :below (+ base base)
-     :when (not (poly-has-solution (poly-to-list a p (1+ d)) p))
+     :when (irreduciblep (poly-to-list a p (1+ d)) p d)
      :do (return-from find-irreducible-polynomial a)))
 
 (defun galois+ (a b p d)

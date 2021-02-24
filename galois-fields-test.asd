@@ -3,11 +3,11 @@
 
 (asdf:defsystem :galois-fields-test
   :description "tests for galois fields library"
-  :version "0.1.20210221"
+  :version "0.2.20210224"
   :author "Patrick Stein <pat@nklein.com>"
   :licence "UNLICENSE"
   :encoding :utf-8
-  :depends-on ((:version #:galois-fields "0.1.20210221")
+  :depends-on ((:version #:galois-fields "0.2.20210224")
                #:nst)
   :components ((:static-file "UNLICENSE.txt")
                (:module "test"

@@ -3,7 +3,7 @@
 
 (asdf:defsystem :galois-fields
   :description "galois fields library"
-  :version "0.1.20210221"
+  :version "0.2.20210224"
   :author "Patrick Stein <pat@nklein.com>"
   :licence "UNLICENSE"
   :encoding :utf-8
