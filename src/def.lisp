@@ -119,15 +119,9 @@
      :do (return-from primep nil))
   t)
 
-(defun %make-field (p d m fn+ fn*)
-  (declare (ignore p d m))
-  (list fn+ fn*))
-
-(defun gf+-function (ff)
-  (first ff))
-
-(defun gf*-function (ff)
-  (second ff))
+(defstruct (galois-field (:constructor %make-galois-field (p d m +-function *-function))
+                         (:conc-name :gf))
+  p d m +-function *-function)
 
 (defun deffield* (&key p (d 1) (use-tables nil use-tables-p))
   (declare (type (integer 2) p)
@@ -163,7 +157,7 @@
                 (t (reduce fn*
                            (rest vs)
                            :initial-value (first vs))))))
-       (%make-field p d m #'plus-fn #'times-fn))))
+       (%make-galois-field p d m #'plus-fn #'times-fn))))
 
 
 (defmacro deffield (name &rest args &key p (d 1) use-tables)
