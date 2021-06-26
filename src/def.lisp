@@ -119,6 +119,16 @@
      :do (return-from primep nil))
   t)
 
+(defun %make-field (p d m fn+ fn*)
+  (declare (ignore p d m))
+  (list fn+ fn*))
+
+(defun gf+-function (ff)
+  (first ff))
+
+(defun gf*-function (ff)
+  (second ff))
+
 (defun deffield* (&key p (d 1) (use-tables nil use-tables-p))
   (declare (type (integer 2) p)
            (type (integer 1) d)
@@ -153,7 +163,7 @@
                 (t (reduce fn*
                            (rest vs)
                            :initial-value (first vs))))))
-       (list #'plus-fn #'times-fn))))
+       (%make-field p d m #'plus-fn #'times-fn))))
 
 
 (defmacro deffield (name &rest args &key p (d 1) use-tables)
@@ -167,9 +177,8 @@
                           (symbol-package name)))
          (times-fn (intern (concatenate 'string base "*")
                            (symbol-package name)))
-         (pp (gensym "fn+"))
-         (tt (gensym "fn*")))
-    `(destructuring-bind (,pp ,tt) (deffield* ,@args)
-       (setf (symbol-function ',plus-fn) ,pp
-             (symbol-function ',times-fn) ,tt)
-       (list ',plus-fn ',times-fn))))
+         (ff (gensym "ff")))
+    `(let ((,ff (deffield* ,@args)))
+       (setf (symbol-function ',plus-fn) (gf+-function ,ff)
+             (symbol-function ',times-fn) (gf*-function ,ff))
+       ,ff)))
