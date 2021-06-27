@@ -159,7 +159,6 @@
                            :initial-value (first vs))))))
        (%make-galois-field p d m #'plus-fn #'times-fn))))
 
-
 (defmacro deffield (name &rest args &key p (d 1) use-tables)
   (declare (type symbol name)
            (type (integer 2) p)
@@ -175,4 +174,16 @@
     `(let ((,ff (deffield* ,@args)))
        (setf (symbol-function ',plus-fn) (gf+-function ,ff)
              (symbol-function ',times-fn) (gf*-function ,ff))
-       ,ff)))
+       (defparameter ,name ,ff))))
+
+(declaim (inline gf+))
+(defun gf+ (gf a b)
+  (declare (type galois-field gf)
+           (type (integer 0) a b))
+  (funcall (gf+-function gf) a b))
+
+(declaim (inline gf*))
+(defun gf* (gf a b)
+  (declare (type galois-field gf)
+           (type (integer 0) a b))
+  (funcall (gf*-function gf) a b))

@@ -4,5 +4,7 @@
   (:use #:cl)
   (:export #:deffield
            #:deffield*
+           #:gf+
+           #:gf*
            #:gf+-function
            #:gf*-function))
